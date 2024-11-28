@@ -1,0 +1,10 @@
+services:
+  onvif-time:
+    image: ghcr.io/alesgenova/onvif-time:dev
+    volumes:
+      - /path/to/config.json:/config/config.json
+    environment:
+      TZ: "America/New_York"
+      ONVIF_TIME_SCHEDULE: "0 2 * * *"
+      ONVIF_TIME_STARTUP_SYNC: True
+    restart: unless-stopped
