@@ -59,7 +59,7 @@ def main():
         return
 
     NTP = config.get("ntp", {})
-    NTP_HOST = NTP.get("host", "1.opnsense.pool.ntp.org")
+    NTP_HOST = NTP.get("host", "pool.ntp.org")
     NTP_PORT = NTP.get("port", "ntp")
     NTP_TIMEOUT = NTP.get("timeout", 5)
 

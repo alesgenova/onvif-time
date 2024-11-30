@@ -9,9 +9,10 @@ RUN pip install --no-cache-dir ntplib onvif_zeep
 COPY src/main.sh /src/main.sh
 COPY src/onvif_time.py /src/onvif_time.py
 COPY src/config.json /config/config.json
+RUN chmod +x /src/main.sh
 
 ENV ONVIF_TIME_SCHEDULE=${ONVIF_TIME_SCHEDULE:-"0  2  *  *  *"}
 ENV ONVIF_TIME_STARTUP_SYNC=${ONVIF_TIME_STARTUP_SYNC:-"true"}
 ENV ONVIF_TIME_DRY_RUN=${ONVIF_TIME_DRY_RUN:-"false"}
 
-CMD ["/bin/sh", "/src/main.sh"]
+CMD ["/src/main.sh"]

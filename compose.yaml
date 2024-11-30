@@ -1,5 +1,6 @@
 services:
   onvif-time:
+    init: True
     image: ghcr.io/alesgenova/onvif-time:dev
     volumes:
       - /path/to/config.json:/config/config.json

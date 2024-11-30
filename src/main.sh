@@ -7,7 +7,7 @@ if [ "$STARTUP_SYNC_LOWER" == "true" ]; then
 fi
 
 # Add cron job to run the time sync script
-echo "${ONVIF_TIME_SCHEDULE} python3 /src/onvif_time.py > /dev/stdout 2>&1" >> /etc/crontabs/root
+echo "${ONVIF_TIME_SCHEDULE} python3 /src/onvif_time.py" > /etc/crontabs/root
 
 # Run crond in the foreground
-/usr/sbin/crond -f
+crond -f

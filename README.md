@@ -44,7 +44,7 @@ Below is an example configuration file:
 ## Running
 ### Docker Run
 ```bash
-docker run --rm \
+docker run --rm --init \
   -v /path/to/config.json:/config/config.json \
   -e TZ="America/New_York" \
   -e ONVIF_TIME_SCHEDULE="0 2 * * *" \
@@ -55,6 +55,7 @@ docker run --rm \
 ```yaml
 services:
   onvif-time:
+    init: True
     image: ghcr.io/alesgenova/onvif-time:dev
     volumes:
       - /path/to/config.json:/config/config.json
