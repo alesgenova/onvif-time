@@ -6,13 +6,22 @@ import json
 import os
 
 
-def current_time(host: str, port: str, timeout: int, tz: str):
+def get_ntp_response(host: str, port: str, timeout: int):
     ntp_client = ntplib.NTPClient()
     ntp_response = ntp_client.request(host, version=3, port=port, timeout=timeout)
-    timezone = pytz.timezone(tz)
-    dt = datetime.datetime.fromtimestamp(ntp_response.tx_time, timezone)
 
-    return dt
+    return ntp_response
+
+
+def adjusted_now(timezone, offset: float) -> datetime.datetime:
+    return datetime.datetime.now(tz=timezone) + datetime.timedelta(seconds=offset)
+
+
+def round_seconds(t: datetime.datetime) -> datetime.datetime:
+    if t.microsecond >= 500_000:
+        t += datetime.timedelta(seconds=1)
+
+    return t.replace(microsecond=0)
 
 
 def set_camera_time(
@@ -45,8 +54,7 @@ def set_camera_time(
 
 
 def main():
-    print("Start:    local time -", datetime.datetime.now())
-
+    print("Info:     local time :", datetime.datetime.now())
     CONFIG_FILE = os.environ.get("ONVIF_TIME_CONFIG", "/config/config.json")
     DRY_RUN = os.environ.get("ONVIF_TIME_DRY_RUN", "false").lower() == "true"
     TZ = os.environ.get("TZ", "UTC")
@@ -55,37 +63,47 @@ def main():
         with open(CONFIG_FILE, "r") as f:
             config = json.load(f)
     except Exception as e:
-        print("ERROR:    open configuration file - ", e)
+        print("ERROR:    open configuration file :", e)
         return
 
-    NTP = config.get("ntp", {})
-    NTP_HOST = NTP.get("host", "pool.ntp.org")
-    NTP_PORT = NTP.get("port", "ntp")
-    NTP_TIMEOUT = NTP.get("timeout", 5)
+    NTP = config.get("ntp", None)
+
+    offset = 0
+
+    if NTP is not None:
+        try:
+            NTP_HOST = NTP.get("host", "pool.ntp.org")
+            NTP_PORT = NTP.get("port", "ntp")
+            NTP_TIMEOUT = NTP.get("timeout", 5)
+            ntp_response = get_ntp_response(NTP_HOST, NTP_PORT, NTP_TIMEOUT)
+            offset = ntp_response.offset
+            print(f"Success:  get offset from NTP server {NTP_HOST} :", offset)
+        except Exception as e:
+            print(f"ERROR:    get offset from NTP server :", e)
+
+    if offset == 0:
+        print(f"Info:     using un-adjusted local time")
 
     CAMERAS = config.get("cameras", {})
 
-    try:
-        dt = current_time(NTP_HOST, NTP_PORT, NTP_TIMEOUT, TZ)
-        print(f"Success:  get time from NTP server {NTP_HOST} -", dt)
-    except Exception as e:
-        print(f"ERROR:    get time from NTP server {NTP_HOST} -", e)
-        return
+    timezone = pytz.timezone(TZ)
 
     for name, camera in CAMERAS.items():
         try:
+            t = round_seconds(adjusted_now(timezone, offset))
+
             camera_host = camera["host"]
             camera_port = camera["port"]
             camera_user = camera["user"]
             camera_pass = camera["password"]
 
             set_camera_time(
-                dt, camera_host, camera_port, camera_user, camera_pass, DRY_RUN
+                t, camera_host, camera_port, camera_user, camera_pass, DRY_RUN
             )
-            print(f"Success:  set time on camera {name}")
+            print(f"Success:  set time on camera {name} :", t)
         except Exception as e:
-            print(f"ERROR:    set time on camera {name} -", e)
-            return
+            print(f"ERROR:    set time on camera {name} :", e)
+            continue
 
 
 if __name__ == "__main__":
